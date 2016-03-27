@@ -1,0 +1,39 @@
+mport org.apache.spark.{SparkConf, SparkContext}
+import org.apache.spark.rdd.RDD
+
+/**
+ * Created by elephant on 16/3/27.
+ */
+object UsersFavouriteMovies {
+  /**
+   *
+   * path like : hdfs://localhost:9000/ua.base
+   * @param   sc  SparkContext
+   * @return  (uid,List)
+   */
+  def getUserMovieList(sc : SparkContext) {
+    val path="Path/to/your/ratingfil"
+    val rating = sc.textFile(path)
+
+    val rating2 = rating.map(line => {
+      val fields = line.split("\t")
+      (fields(0).toInt, (fields(1).toInt, fields(2).toDouble))
+    })
+
+    val list = rating2
+      .groupByKey()
+      .mapValues(tup => tup.toList.sortWith(_._2 > _._2).slice(0,5)) // list从大到小的顺序排列，取前五个
+      .sortByKey()
+
+    list.collect().foreach(println)
+
+  }
+
+
+  def  main (args: Array[String]){
+    val conf = new SparkConf().setMaster("local[2]").setAppName("ItemBased")
+    val sc = new SparkContext(conf)
+    getUserMovieList(sc)
+  }
+}
+
